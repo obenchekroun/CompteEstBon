@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>IDESourceControlProjectFavoriteDictionaryKey</key>
+	<false/>
+	<key>IDESourceControlProjectIdentifier</key>
+	<string>EE7E2C9F-463F-4FB2-B712-F239F26821C1</string>
+	<key>IDESourceControlProjectName</key>
+	<string>CompteEstBon</string>
+	<key>IDESourceControlProjectOriginsDictionary</key>
+	<dict>
+		<key>DB4B19405F31C7E18F4930666B98873499320297</key>
+		<string>https://github.com/obenchekroun/CompteEstBon.git</string>
+	</dict>
+	<key>IDESourceControlProjectPath</key>
+	<string>CompteEstBon.xcodeproj</string>
+	<key>IDESourceControlProjectRelativeInstallPathDictionary</key>
+	<dict>
+		<key>DB4B19405F31C7E18F4930666B98873499320297</key>
+		<string>../..</string>
+	</dict>
+	<key>IDESourceControlProjectURL</key>
+	<string>https://github.com/obenchekroun/CompteEstBon.git</string>
+	<key>IDESourceControlProjectVersion</key>
+	<integer>111</integer>
+	<key>IDESourceControlProjectWCCIdentifier</key>
+	<string>DB4B19405F31C7E18F4930666B98873499320297</string>
+	<key>IDESourceControlProjectWCConfigurations</key>
+	<array>
+		<dict>
+			<key>IDESourceControlRepositoryExtensionIdentifierKey</key>
+			<string>public.vcs.git</string>
+			<key>IDESourceControlWCCIdentifierKey</key>
+			<string>DB4B19405F31C7E18F4930666B98873499320297</string>
+			<key>IDESourceControlWCCName</key>
+			<string>CompteEstBon</string>
+		</dict>
+	</array>
+</dict>
+</plist>
