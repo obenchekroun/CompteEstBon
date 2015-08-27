@@ -8,10 +8,20 @@
 
 #import "ViewController.h"
 
+#define PP   0   // deux plaques
+#define RP   1   // un résultat et une plaque
+#define RR   2   // deux résultats
+#define RR2  3   // deux résultats mais pas issus des 2 résultats justes précédents (1 autre résultat entre les 2)
+
 #define ADD    '+'
 #define MUL    '*'
 #define SOUS   '-'
 #define DIV    '/'
+
+typedef struct
+{
+    int typeoperation[8];
+} schema;
 
 typedef struct
 {
@@ -21,20 +31,36 @@ typedef struct
     long resultat[16];
 } solution;
 
-long plaqueini[16]={1,3,5,7,9,1};
-long resultat=377;
+long PlaqueIni[16]={1,3,5,7,9,1};
+long Resultat=377;
 
-long meilleurecart;
-int meilleurlevel;
+long MeilleurEcart;
+int MeilleurNombrePlaques;
 
 long NombreAppelCompte;
 
-long solutions;
+long Solutions;
 
-long plaque[16][16]; // 16*16 pour optimiser un peu
+long Plaque[16][16]; // 16*16 pour optimiser un peu
+long ResultatLigne[16];
 
-solution savesolution;
-solution bestsolution;
+schema Cas[8][8]=
+{{0,0,0,0,0,0,0,0},
+    {0,0,0,0,0,0,0,0},
+    {{PP},0,0,0,0,0,0,0},
+    {{PP,RP},0,0,0,0,0,0,0},
+    {{PP,PP,RR},{PP,RP,RP},0,0,0,0,0,0},
+    {{PP,RP,PP,RR},{PP,PP,RR,RP},{PP,RP,RP,RP},0,0,0,0,0},
+    {{PP,PP,RR,PP,RR},{PP,RP,PP,RP,RR2},{PP,RP,PP,RR,RP},{PP,RP,RP,PP,RR},{PP,PP,RR,RP,RP},{PP,RP,RP,RP,RP},0,0},
+    {0,0,0,0,0,0,0,0}};
+
+int NombreConfigs[8]={0,0,1,1,2,3,6,0};
+
+int NombrePlaques;
+int Config;
+
+solution SaveSolution;
+solution BestSolution;
 
 @interface ViewController ()
 
@@ -42,10 +68,19 @@ solution bestsolution;
 
 - (void)calculer;
 
+
+-(void) AffichePresentation;
+-(void) AfficheErreurParametres;
+-(void) AfficheSolution:(int) l;
+-(void) Calcule:(int)l pP:(int)p plaquesPrises:(int) plaquesPrises plaque1:(long) plaque1 plaque2:(long)plaque2;
+-(void) compte:(int)l pP:(int) p;
+
+/*
 -(void) AffichePresentation;
 -(void) AfficheErreurParametres;
 -(void) affichesolution:(int) l;
 -(void) compte:(int) l;
+ */
 
 @end
 
@@ -186,7 +221,7 @@ solution bestsolution;
     return;
 }
 
--(void) affichesolution:(int) l
+-(void) AfficheSolution:(int) l
 {
     int i;
     
@@ -198,11 +233,11 @@ solution bestsolution;
     [_tvResultat setAttributedText:historyText];
     
     printf("******************\n");
-    for(i=6;i>l;i--)
+    for(i=0;i<l;i++)
     {
         
         //[_tvResultat performSelectorOnMainThread:@selector(setText:) withObject:[_tvResultat.text stringByAppendingString:[NSString stringWithFormat:@"%lu %c %lu = %lu\n",bestsolution.valeur1[i],bestsolution.operation[i],bestsolution.valeur2[i],bestsolution.resultat[i]]] waitUntilDone:NO];
-        NSString *daz = [[NSString alloc]initWithFormat:@"%lu %c %lu = %lu\n",bestsolution.valeur1[i],bestsolution.operation[i],bestsolution.valeur2[i],bestsolution.resultat[i]];
+        NSString *daz = [[NSString alloc]initWithFormat:@"%lu %c %lu = %lu\n",BestSolution.valeur1[i],BestSolution.operation[i],BestSolution.valeur2[i],BestSolution.resultat[i]];
         
         NSAttributedString *solutionText = [[NSAttributedString alloc]initWithString:daz attributes:_attributePrimaryText];
         historyText = [[NSMutableAttributedString alloc] initWithAttributedString:_tvResultat.attributedText];
@@ -210,7 +245,7 @@ solution bestsolution;
         
         [_tvResultat setAttributedText:historyText];
         
-        printf("%lu %c %lu = %lu\n",bestsolution.valeur1[i],bestsolution.operation[i],bestsolution.valeur2[i],bestsolution.resultat[i]);
+        printf("%lu %c %lu = %lu\n",BestSolution.valeur1[i],BestSolution.operation[i],BestSolution.valeur2[i],BestSolution.resultat[i]);
     }
     
     //[_tvResultat setText:[_tvResultat.text stringByAppendingString:[NSString stringWithFormat:@"******************\n"]]];
@@ -221,149 +256,219 @@ solution bestsolution;
     printf("******************\n");
 }
 
--(void) compte:(int) l
+
+-(void) Calcule:(int)l pP:(int)p plaquesPrises:(int) plaquesPrises plaque1:(long)plaque1 plaque2:(long)plaque2
 {
-    int i,j,k,n;
-    long plaque1,plaque2;
-    long ecart;
     long r;
     
-    NombreAppelCompte++;
-    
-    ecart=resultat-plaque[l][0];
-    if(ecart<0)
-        ecart=-ecart;
-    if(ecart<=meilleurecart)
+    ResultatLigne[l]=plaque1+plaque2;
+    SaveSolution.valeur1[l]=plaque1;
+    SaveSolution.operation[l]=ADD;
+    SaveSolution.valeur2[l]=plaque2;
+    SaveSolution.resultat[l]=ResultatLigne[l];
+    [self compte:(l+1) pP:(p-plaquesPrises)];
+    if(plaque1!=1 && plaque2!=1)
     {
-        if(ecart<meilleurecart)
+        ResultatLigne[l]=plaque1*plaque2;
+        
+        SaveSolution.operation[l]=MUL;
+        
+        SaveSolution.resultat[l]=ResultatLigne[l];
+        [self compte:(l+1) pP:(p-plaquesPrises)];
+        
+        
+        if(plaque1>=plaque2)
         {
-            meilleurecart=ecart;
-            bestsolution=savesolution;
-            meilleurlevel=l;
-            if(!ecart)
+            ResultatLigne[l]=plaque1-plaque2;
+            if(ResultatLigne[l])
             {
-                solutions++;
-                [self affichesolution:l];
+                //        SaveSolution.valeur1[l]=plaque1;
+                SaveSolution.operation[l]=SOUS;
+                //        SaveSolution.valeur2[l]=plaque2;
+                SaveSolution.resultat[l]=ResultatLigne[l];
+                [self compte:(l+1) pP:(p-plaquesPrises)];
+            }
+            
+            r= plaque1 % plaque2;
+            
+            if(!r)
+            {
+                ResultatLigne[l]=plaque1/plaque2;
+                //        SaveSolution.valeur1[l]=plaque1;
+                SaveSolution.operation[l]=DIV;
+                //        SaveSolution.valeur2[l]=plaque2;
+                SaveSolution.resultat[l]=ResultatLigne[l];
+                [self compte:(l+1) pP:(p-plaquesPrises)];
             }
         }
-        else  // (ecart==meilleurecart)
+        else
         {
-            if(!ecart)
-                solutions++;
-                if(_fullResults.isOn)
-                    [self affichesolution:l];
+            ResultatLigne[l]=plaque2-plaque1;
+            SaveSolution.valeur1[l]=plaque2;
+            SaveSolution.operation[l]=SOUS;
+            SaveSolution.valeur2[l]=plaque1;
+            SaveSolution.resultat[l]=ResultatLigne[l];
+            [self compte:(l+1) pP:(p-plaquesPrises)];
             
-            if(l>meilleurlevel)
+            r=plaque2 % plaque1;
+            if(!r)
             {
-                bestsolution=savesolution;
-                meilleurlevel=l;
-                if(!ecart)
-                    [self affichesolution:l];
+                ResultatLigne[l]=plaque2/plaque1;
+                //        SaveSolution.valeur1[l]=plaque2;
+                SaveSolution.operation[l]=DIV;
+                //      SaveSolution.valeur2[l]=plaque1;
+                SaveSolution.resultat[l]=ResultatLigne[l];
+                [self compte:(l+1) pP:(p-plaquesPrises)];
             }
         }
     }
-    
-    if(l==1)
-        return;
-    
-    for(i=0;i<l-1;i++)
+    else if(plaque1>=plaque2)
     {
-        for(j=i+1;j<l;j++)
+        ResultatLigne[l]=plaque1-plaque2;
+        if(ResultatLigne[l])
         {
-            plaque1=plaque[l][i];     // prend 2 plaques
-            plaque2=plaque[l][j];     // parmi les C(l,2)=(l*l-1)/2 possibles
-            
-            
-            n=1;
-            for(k=0;k<l;k++)
+            //      SaveSolution.valeur1[l]=plaque1;
+            SaveSolution.operation[l]=SOUS;
+            //      SaveSolution.valeur2[l]=plaque2;
+            SaveSolution.resultat[l]=ResultatLigne[l];
+            [self compte:(l+1) pP:(p-plaquesPrises)];
+        }
+    }
+    else
+    {
+        ResultatLigne[l]=plaque2-plaque1;
+        SaveSolution.valeur1[l]=plaque2;
+        SaveSolution.operation[l]=SOUS;
+        SaveSolution.valeur2[l]=plaque1;
+        SaveSolution.resultat[l]=ResultatLigne[l];
+        [self compte:(l+1) pP:(p-plaquesPrises)];
+    }
+}
+
+
+
+-(void) compte:(int)l pP:(int) p     // l= numeroligne, p=plaqueRestantes
+{
+    int i,j,k,n;
+    long ecart;
+    long plaque1,plaque2;
+    
+    NombreAppelCompte++;
+    
+    if(l==NombrePlaques-1)
+    {
+        ecart=Resultat-ResultatLigne[l-1];
+        if(ecart<0)
+            ecart=-ecart;
+        if(ecart<=MeilleurEcart)
+        {
+            if(ecart<MeilleurEcart)
             {
-                if(k!=i && k!=j)
+                MeilleurEcart=ecart;
+                BestSolution=SaveSolution;
+                MeilleurNombrePlaques=NombrePlaques;
+                if(!ecart)
                 {
-                    plaque[l-1][n]=plaque[l][k];
-                    n++;
+                    Solutions++;
+                    [self AfficheSolution:l];
                 }
             }
-            
-            plaque[l-1][0]=plaque1+plaque2;
-            savesolution.valeur1[l]=plaque1;
-            savesolution.operation[l]=ADD;
-            savesolution.valeur2[l]=plaque2;
-            savesolution.resultat[l]=plaque[l-1][0];
-            [self compte:(l-1)];
-            if(plaque1!=1 && plaque2!=1)
+            else     // (ecart==MeilleurEcart)
             {
-                plaque[l-1][0]=plaque1*plaque2;
-                //      savesolution.valeur1[l]=plaque1; inutile car fait juste avant
-                savesolution.operation[l]=MUL;
-                //      savesolution.valeur2[l]=plaque2;  inutile car fait juste avant
-                savesolution.resultat[l]=plaque[l-1][0];
-                [self compte:(l-1)];
-                
-                if(plaque1>=plaque2)
+                if(!ecart)
+                    Solutions++;
+                    if(_fullResults.isOn)
+                        [self AfficheSolution:l];
+                if(NombrePlaques<MeilleurNombrePlaques)
                 {
-                    plaque[l-1][0]=plaque1-plaque2;
-                    if(plaque[l-1][0])
-                    {
-                        //          savesolution.valeur1[l]=plaque1;
-                        savesolution.operation[l]=SOUS;
-                        //          savesolution.valeur2[l]=plaque2;
-                        savesolution.resultat[l]=plaque[l-1][0];
-                        [self compte:(l-1)];
-                    }
-                    r=plaque1%plaque2;
-                    if(!r)
-                    {
-                        plaque[l-1][0]=plaque1/plaque2;
-                        //          savesolution.valeur1[l]=plaque1;
-                        savesolution.operation[l]=DIV;
-                        //          savesolution.valeur2[l]=plaque2;
-                        savesolution.resultat[l]=plaque[l-1][0];
-                        [self compte:(l-1)];
-                    }
+                    BestSolution=SaveSolution;
+                    MeilleurNombrePlaques=NombrePlaques;
+                    if(!ecart)
+                        [self AfficheSolution:l];
                 }
-                else
-                {
-                    plaque[l-1][0]=plaque2-plaque1; // toujours superieur à 0
-                    savesolution.valeur1[l]=plaque2;
-                    savesolution.operation[l]=SOUS;
-                    savesolution.valeur2[l]=plaque1;
-                    savesolution.resultat[l]=plaque[l-1][0];
-                    [self compte:(l-1)];
-                    
-                    r=plaque2%plaque1;
-                    if(!r)
-                    {
-                        plaque[l-1][0]=plaque2/plaque1;
-                        //          savesolution.valeur1[l]=plaque2;
-                        savesolution.operation[l]=DIV;
-                        //          savesolution.valeur2[l]=plaque1;
-                        savesolution.resultat[l]=plaque[l-1][0];
-                        [self compte:(l-1)];
-                    }
-                }
-            }
-            else if(plaque1>=plaque2)
-            {
-                plaque[l-1][0]=plaque1-plaque2;
-                if(plaque[l-1][0])
-                {
-                    //        savesolution.valeur1[l]=plaque1;
-                    savesolution.operation[l]=SOUS;
-                    //        savesolution.valeur2[l]=plaque2;
-                    savesolution.resultat[l]=plaque[l-1][0];
-                    [self compte:(l-1)];
-                }
-            }
-            else
-            {
-                plaque[l-1][0]=plaque2-plaque1; // toujours superieur à 0
-                savesolution.valeur1[l]=plaque2;
-                savesolution.operation[l]=SOUS;
-                savesolution.valeur2[l]=plaque1;
-                savesolution.resultat[l]=plaque[l-1][0];
-                [self compte:(l-1)];
             }
         }
+        
+        return;
+    }
+    
+    switch(Cas[NombrePlaques][Config].typeoperation[l])
+    {
+        case PP :
+            
+            for(i=0;i<p-1;i++)
+            {
+                for(j=i+1;j<p;j++)
+                {
+                    plaque1=Plaque[l][i];   // prend 2 plaques parmi les C(p,2)=(p*(p-1))/2
+                    plaque2=Plaque[l][j];   // couples possibles de plaques restantes
+                    
+                    n=0;
+                    for(k=0;k<p;k++)
+                    {
+                        if(k!=i && k!=j)
+                        {
+                            Plaque[l+1][n]=Plaque[l][k];
+                            n++;
+                        }
+                    }
+                    
+                    [self Calcule:l pP:p plaquesPrises:2 plaque1:plaque1 plaque2:plaque2];
+                    
+                }
+            }
+            
+            break;
+            
+        case RP :
+            
+            for(i=0;i<p;i++)
+            {
+                plaque1=ResultatLigne[l-1];  // prend 1 plaque parmi les p plaques restantes
+                plaque2=Plaque[l][i];        // et le resultat pr√©c√©dent
+                
+                n=0;
+                for(k=0;k<p;k++)
+                {
+                    if(k!=i)
+                    {
+                        Plaque[l+1][n]=Plaque[l][k];
+                        n++;
+                    }
+                }
+                
+                [self Calcule:l pP:p plaquesPrises:1 plaque1:plaque1 plaque2:plaque2];
+            }
+            
+            break;
+            
+        case RR :
+            
+            plaque1=ResultatLigne[l-2];   // prend les 2 resultats pr√©c√©dents :
+            plaque2=ResultatLigne[l-1];
+            
+            for(k=0;k<p;k++)                  // simple recopie au niveau suivant
+                Plaque[l+1][k]=Plaque[l][k];
+            
+            [self Calcule:l pP:p plaquesPrises:0 plaque1:plaque1 plaque2:plaque2];
+            
+            break;
+            
+        case RR2 : // meme chose que "case RR" sauf la ligne qui suit :
+            
+            plaque1=ResultatLigne[l-3];   // prend les 2 resultats pr√©c√©dents
+            plaque2=ResultatLigne[l-1];   // avec un resultat intermediaire : ResultatLigne[l-2] 
+            
+            for(k=0;k<p;k++)                  // simple recopie au niveau suivant
+                Plaque[l+1][k]=Plaque[l][k];
+            
+            [self Calcule:l pP:p plaquesPrises:0 plaque1:plaque1 plaque2:plaque2];
+            
+            break;
+            
+        default :
+            printf("Problem in SWITCH \n");
+            exit(1);
     }
 }
 
@@ -384,15 +489,15 @@ solution bestsolution;
     {
         for(i=0;i<6;i++)
         {
-            plaqueini[i] = [[arrayParam objectAtIndex:i]intValue];
-            if(plaqueini[i]<=0)
+            PlaqueIni[i] = [[arrayParam objectAtIndex:i]intValue];
+            if(PlaqueIni[i]<=0)
             {
                 [self AfficheErreurParametres];
                 return;
             }
         }
-        resultat = [[arrayParam objectAtIndex:6]intValue];
-        if (resultat<=0)
+        Resultat = [[arrayParam objectAtIndex:6]intValue];
+        if (Resultat<=0)
         {
             [self AfficheErreurParametres];
             return;
@@ -403,45 +508,53 @@ solution bestsolution;
         [self AfficheErreurParametres];
         return;
     }
+    
     for(i=0;i<6;i++)   // Résultat dans les 6 nombres
     {
-        if(resultat==plaqueini[i])
+        if(Resultat==PlaqueIni[i])
         {
             
-            [_tvResultat setAttributedText:[[NSAttributedString alloc]initWithString:[NSString stringWithFormat:@"Solution in the original 6 numbers : %ld \n",resultat] attributes:_attributeSubText]];
+            [_tvResultat setAttributedText:[[NSAttributedString alloc]initWithString:[NSString stringWithFormat:@"Solution in the original 6 numbers : %ld \n",Resultat] attributes:_attributeSubText]];
             
-            printf("Solution in the original 6 numbers : %ld \n",resultat);
+            printf("Solution in the original 6 numbers : %ld \n",Resultat);
             return;
         }
     }
+    
     for(i=0;i<6;i++)  // initialise plaque[][]
-        plaque[6][i]=plaqueini[i];
-    meilleurecart=LONG_MAX; //ecart maximal
-    meilleurlevel=INT_MAX;
+        Plaque[0][i]=PlaqueIni[i];
+    MeilleurEcart=LONG_MAX; //ecart maximal
+    MeilleurNombrePlaques=INT_MAX;
     
     NombreAppelCompte=0;
     
-    solutions=0;
+    Solutions=0;
     
-    [self compte:6];
+    for(NombrePlaques=6;NombrePlaques>=2;NombrePlaques--)
+    {
+        for(Config=0;Config<NombreConfigs[NombrePlaques];Config++)
+        {
+            [self compte:0 pP:6];
+        }
+    }
     
-    if(meilleurecart>0)
+    if(MeilleurEcart>0)
     {
         
         [_tvResultat setAttributedText:[[NSAttributedString alloc]initWithString:[NSString stringWithFormat:@"Closest Solution \n"] attributes:_attributeSubText]];
         
         printf("Closest solution :\n");
-        [self affichesolution:meilleurlevel];
+        [self AfficheSolution:(MeilleurNombrePlaques-1)];
     }
     
     printf("\n");
-    printf("N solutions : %lu\n",solutions);
-    printf("min ecart : %lu\n",meilleurecart);
-    printf("N appels fonction récursive : %lu \n",NombreAppelCompte);
+    printf("N solutions : %lu\n",Solutions);
+    printf("min ecart : %lu\n",MeilleurEcart);
+    printf("N appels √† la fonction rÇcursive : %lu \n",NombreAppelCompte);
     
     
     NSMutableAttributedString *historyText = [[NSMutableAttributedString alloc] initWithAttributedString:_tvResultat.attributedText];
-    NSString *stats = [[NSString alloc]initWithFormat:@"\n N solutions : %lu \n min delta : %lu \n N recursive function calls : %lu \n",solutions,meilleurecart,NombreAppelCompte];
+    NSString *stats = [[NSString alloc]initWithFormat:@"\n N solutions : %lu \n min delta : %lu \n N recursive function calls : %lu \n",Solutions,MeilleurEcart,NombreAppelCompte];
     NSMutableAttributedString *statsText = [[NSMutableAttributedString alloc]initWithString:stats attributes:_attributeSubText];
     
     [historyText appendAttributedString:statsText];
