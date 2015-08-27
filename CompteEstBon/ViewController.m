@@ -376,9 +376,14 @@ solution BestSolution;
             else     // (ecart==MeilleurEcart)
             {
                 if(!ecart)
+                {
                     Solutions++;
                     if(_fullResults.isOn)
+                    {
+                        BestSolution=SaveSolution;
                         [self AfficheSolution:l];
+                    }
+                }
                 if(NombrePlaques<MeilleurNombrePlaques)
                 {
                     BestSolution=SaveSolution;
